@@ -24,6 +24,10 @@ Usage::
         rebalance cadence against SimBroker; the full result JSON prints
         to stdout. Mutually exclusive with --paper.
 
+    --allocator {static,equal_weight}
+        Override the mandate's CIO. static (default) keeps StrategySpec
+        slices; equal_weight is a stub that splits capital evenly.
+
 A mandate is the desk — strategies, staff, risk, capital, cadence — and never
 names tickers; --tickers says what to point it at for this run.
 
@@ -44,7 +48,7 @@ from rich.console import Console
 
 from hedge_fund.backtesting import backtest_fund
 from hedge_fund.data import CachedDataClient, FDClient
-from hedge_fund.fund import Fund, load_spec, normalize_universe
+from hedge_fund.fund import ALLOCATOR_NAMES, Fund, load_spec, normalize_universe
 from hedge_fund.ledger import broker_for_run, save_cycle_record
 from hedge_fund.paths import ensure_mandates_dir
 from hedge_fund.pipeline import run_cycle
@@ -97,6 +101,13 @@ def main() -> None:
         "before --date)",
     )
     parser.add_argument(
+        "--allocator",
+        choices=sorted(ALLOCATOR_NAMES),
+        help="CIO capital-allocation policy (default: the mandate's "
+        "allocator, else static). equal_weight is a stub that ignores "
+        "mandate slices and splits capital evenly",
+    )
+    parser.add_argument(
         "--model",
         help="LLM the investor agents reason with, e.g. claude-opus-5 "
         "(default: HEDGE_FUND_LLM_MODEL env, else the built-in default); quant models "
@@ -122,6 +133,8 @@ def main() -> None:
 
     console = Console(stderr=True)  # status + summary on stderr; stdout stays pure JSON
     spec = load_spec(args.mandate)
+    if args.allocator is not None:
+        spec = spec.model_copy(update={"allocator": args.allocator})
     fund = Fund(spec)
 
     if args.backtest:
