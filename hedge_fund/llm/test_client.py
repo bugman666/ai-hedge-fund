@@ -239,7 +239,7 @@ class TestTimeoutAndBaseUrl:
     @pytest.mark.parametrize("raw", ["0", "-1", "nan", "inf"])
     def test_resolve_timeout_rejects_non_positive_env(self, raw, monkeypatch):
         monkeypatch.setenv(TIMEOUT_ENV_VAR, raw)
-        with pytest.raises(ValueError, match="timeout"):
+        with pytest.raises(ValueError, match=TIMEOUT_ENV_VAR):
             resolve_timeout(None)
 
     def test_resolve_timeout_rejects_unparseable_env(self, monkeypatch):
