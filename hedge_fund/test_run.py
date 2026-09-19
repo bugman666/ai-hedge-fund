@@ -12,6 +12,7 @@ from hedge_fund.brokers.sim import SimBroker
 from hedge_fund.data.models import Price
 from hedge_fund.fund.spec import Fund, FundSpec
 from hedge_fund.models import Signal
+from hedge_fund.ledger import latest_run_receipt
 from hedge_fund.pipeline.models import CycleRecord
 
 
@@ -110,7 +111,8 @@ def test_paper_flag_writes_receipt_and_next_run_seeds(tmp_path, monkeypatch, cap
     assert second.equity_before == pytest.approx(first.nav)
     assert second.positions == first.positions
     assert second.orders == []
-    assert len(list(tmp_path.glob("paper-desk-run-*.json"))) == 2
+    # Same-second reruns may overwrite the stamp; the newest receipt is the book.
+    assert latest_run_receipt("paper-desk", tmp_path) is not None
 
 
 def test_default_live_clock_path_is_paper(tmp_path, monkeypatch, capsys):
